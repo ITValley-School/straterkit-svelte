@@ -1,0 +1,10 @@
+// See https://codepen.io/kevinweber/pen/dXWoRw
+@function escape-svg(variables.$string) {
+  @if str-index(variables.$string, "data:image/svg+xml") {
+    @each variables.$char, variables.$encoded in variables.$escaped-characters {
+      variables.$string: str-replace(variables.$string, variables.$char, variables.$encoded);
+    }
+  }
+
+  @return variables.$string;
+}
