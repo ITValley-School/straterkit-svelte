@@ -11,7 +11,8 @@
 		"postcss": "sass ./src/assets/scss/style.scss ./src/assets/css/style.css && postcss ./src/assets/css/style.css -o ./src/assets/css/style.css",
 		"sass": "sass ./src/assets/scss/:./src/assets/css/  --load-path=node_modules",
 		"sass-min": "sass ./src/assets/scss/:./src/assets/css/ --style compressed",
-		"postbuild": "node postbuild.js"
+		"postbuild": "node postbuild.js",
+		"start": "node server.cjs"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.21.0",
@@ -30,6 +31,7 @@
 		"@sveltejs/adapter-static": "^3.0.6",
 		"@sveltestrap/sveltestrap": "^6.2.7",
 		"apexcharts": "^3.54.1",
+		"express": "^4.21.2",
 		"js-cookie": "^3.0.5",
 		"sass": "^1.79.5",
 		"svelte-select": "^5.8.3",
