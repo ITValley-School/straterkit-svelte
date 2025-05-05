@@ -36,7 +36,7 @@
 		"js-cookie": "^3.0.5",
 		"sass": "^1.79.5",
 		"svelte-select": "^5.8.3",
-		"sveltestrap": "^5.11.3",
+		"sveltestrap": "^5.10.0",
 		"svrollbar": "^0.12.0"
 	}
 }
