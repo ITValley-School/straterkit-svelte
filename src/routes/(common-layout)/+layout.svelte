@@ -20,7 +20,7 @@
   <Header />
   <Sidebar />
   <div class="main-content app-content">
-    <div class="container-fluid">
+    <div class="container-fluid py-4 px-3">
       <slot />
     </div>
   </div>

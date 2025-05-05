@@ -1,103 +1,77 @@
-
 export const menuData = [
     {
-        menuTitle: 'MAIN'
+      menuTitle: 'AUTOR'
     },
     {
-        type: 'sub',
-        title: 'Dashboards',
-        icon: 'bx bx-home',
-        badge: '12',
-        badgeColor: 'bg-warning-transparent',
-        selected: false,
-        active: false,
-        dirchange: false,
-        children: [
-            { path: '/dashboards/crm', type: 'link', title: 'CRM', selected: false, active: false, dirchange: false, },
-        ]
+      type: 'link',
+      title: 'Dashboard',
+      icon: 'bx bx-home',
+      path: '/autor/dashboard',
+      selected: false,
+      active: false
     },
     {
-        type: 'sub',
-        title: 'Error',
-        icon: 'bx bx-error',
-        selected: false,
-        active: false,
-        dirchange: false,
-        children: [
-            {
-                path: '/error/error-401',
-                type: 'link',
-                title: 'Error 401',
-                selected: false,
-                active: false,
-                dirchange: false,
-            },
-        ]
+      type: 'link',
+      title: 'Cadastrar Livro',
+      icon: 'bx bx-book-add',
+      path: '/books/createrbook'
     },
     {
-        type: 'sub',
-        title: 'Nested Menu',
-        icon: 'bx bx-layer',
-        selected: false,
-        active: false,
-        dirchange: false,
-        children: [
-            {
-                path: '',
-                type: 'empty',
-                title: 'Nested-1',
-                selected: false,
-                active: false,
-                dirchange: false,
-            },
-            {
-                type: 'sub',
-                title: 'Nested-2',
-                selected: false,
-                active: false,
-                dirchange: false,
-                children: [
-                    {
-                        path: '',
-                        type: 'empty',
-                        title: 'Nested-2-1',
-                        selected: false,
-                        active: false,
-                        dirchange: false,
-                    },
-                    {
-                        type: 'sub',
-                        title: 'Nested-2-2',
-                        selected: false,
-                        active: false,
-                        dirchange: false,
-                        children: [
-                            {
-                                path: '',
-                                type: 'empty',
-                                title: 'Nested-2-2-1',
-                                selected: false,
-                                active: false,
-                                dirchange: false,
-                            },
-                            {
-                                path: '',
-                                type: 'empty',
-                                title: 'Nested-2-2-2',
-                                selected: false,
-                                active: false,
-                                dirchange: false,
-                            },
-
-                        ]
-                    }
-                ]
-            }
-        ]
+      type: 'link',
+      title: 'Escrita / Edição',
+      icon: 'bx bx-edit-alt',
+      path: '/books/writerbook'
     },
-];
-const MOCK_DATA = {
+    {
+      type: 'link',
+      title: 'Biblioteca de Arquivos',
+      icon: 'bx bx-folder',
+      path: '/filemanager/librarymanager'
+    },
+    {
+      type: 'link',
+      title: 'Minhas Publicações',
+      icon: 'bx bx-globe',
+      path: '/books/publishingbooks'
+    },
+    {
+      type: 'link',
+      title: 'Perfil',
+      icon: 'bx bx-user',
+      path: '/autor/myperfil'
+    },
+    {
+      menuTitle: 'ADMIN'
+    },
+    {
+      type: 'link',
+      title: 'Dashboard Admin',
+      icon: 'bx bx-pie-chart-alt',
+      path: '/admin/dashboard'
+    },
+    {
+      type: 'link',
+      title: 'Gestão de Usuários',
+      icon: 'bx bx-group',
+      path: '/admin/usuarios'
+    },
+    {
+      type: 'link',
+      title: 'Visualizar Livros',
+      icon: 'bx bx-book',
+      path: '/admin/livros'
+    },
+    {
+      type: 'link',
+      title: 'Logs do Sistema',
+      icon: 'bx bx-list-check',
+      path: '/admin/logs'
+    }
+  ];
+  
+  const MOCK_DATA = {
     menuData
-}
-
-export default MOCK_DATA;
+  };
+  
+  export default MOCK_DATA;
+  

@@ -31,10 +31,12 @@
 		"@sveltejs/adapter-static": "^3.0.6",
 		"@sveltestrap/sveltestrap": "^6.2.7",
 		"apexcharts": "^3.54.1",
+		"bootstrap": "^5.3.5",
 		"express": "^4.21.2",
 		"js-cookie": "^3.0.5",
 		"sass": "^1.79.5",
 		"svelte-select": "^5.8.3",
+		"sveltestrap": "^5.11.3",
 		"svrollbar": "^0.12.0"
 	}
 }
