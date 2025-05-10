@@ -26,29 +26,28 @@ export const browserSet = (key, value) => {
 export const post = async (fetch, url, body) => {
   try {
     const headers = {
-      "Content-Type": "application/octet-stream",
       Authorization: "",
     };
     if (!(body instanceof FormData)) {
       headers["Content-Type"] = "application/json";
       body = JSON.stringify(body);
-      const token = browserGet("refreshToken");
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      const res = await fetch(`${variables.BASE_API_URI}${url}`, {
-        method: "POST",
-        body,
-        headers,
-      });
-      if (res.status === 401) await goto("/login");
-
-      const response = await res.json();
-
-      if (!res.ok) return [{}, response];
-
-      return [response, []];
     }
+    const token = browserGet("refreshToken");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${variables.BASE_API_URI}${url}`, {
+      method: "POST",
+      body,
+      headers,
+    });
+    if (res.status === 401) await goto("/login");
+
+    const response = await res.json();
+
+    if (!res.ok) return [{}, response];
+
+    return [response, []];
   } catch (error) {
     const errors = [
       { error: "An unknown error occurred." },

@@ -4,7 +4,6 @@
   import ListGroup from "$lib/@spk/ListGroup/SpkListGroup.svelte";
   import TopicItem from "$lib/components/newItvalley/TopicItem.svelte";
   import { onMount } from "svelte";
-  import { PUBLIC_BACKEND_API_URL } from "$env/static/public";
 
   let livros = [
     { id: 1, titulo: "Manual da Vitória" },
