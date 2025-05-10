@@ -6,27 +6,32 @@
   import Header from "$lib/components/layout-components/header/Header.svelte";
   import BackToTop from "$lib/components/layout-components/backToTop/BackToTop.svelte";
   import { themeStore } from "../../lib/components/layout-components/switcher/switcher.js";
-  
+  import { userData } from "$lib/store/userStore.js";
+
+  export let data;
+
   let themeLoaded = false;
 
-  onMount(() => {
-    themeStore.retrieveUserLocalStorage(); 
-    themeLoaded = true; 
+  onMount(async () => {
+    themeStore.retrieveUserLocalStorage();
+    themeLoaded = true;
+
+    if (data?.user) userData.set(data.user);
   });
 </script>
 
 {#if themeLoaded}
-<div class="page">
-  <Header />
-  <Sidebar />
-  <div class="main-content app-content">
-    <div class="container-fluid py-4 px-3">
-      <slot />
+  <div class="page">
+    <Header />
+    <Sidebar />
+    <div class="main-content app-content">
+      <div class="container-fluid py-4 px-3">
+        <slot />
+      </div>
     </div>
+    <Footer />
   </div>
-  <Footer />
-</div>
-<BackToTop />
+  <BackToTop />
 {/if}
 
 <!--

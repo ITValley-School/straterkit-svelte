@@ -18,6 +18,7 @@
   import Switcher from "../switcher/Switcher.svelte";
   import { menuData } from "$lib/components/layout-components/sidebar/nav.js"; // Adjust the path as needed
   import { themeStore } from "../switcher/switcher.js";
+  import { userData } from "$lib/store/userStore.js";
   const basePath = __BASE_PATH__;
   export const Data1 = [
     { value: "1", label: "Argentina" },
@@ -114,10 +115,10 @@
   // Reactive search logic
   $: searchLower = inputValue.toLowerCase();
   $: suggestions = filterSuggestions.filter((item) =>
-    item.title.toLowerCase().includes(searchLower),
+    item.title.toLowerCase().includes(searchLower)
   );
   $: suggestion = suggestions.filter((item) =>
-    item.title.toLowerCase().startsWith(searchLower),
+    item.title.toLowerCase().startsWith(searchLower)
   );
 
   // Event handlers
@@ -377,7 +378,7 @@
   // Function to delete a notification by ID
   function deleteNotification(id) {
     notifications = notifications.filter(
-      (notification) => notification.id !== id,
+      (notification) => notification.id !== id
     );
   }
 </script>
@@ -920,7 +921,7 @@
               />
             </div>
             <div class="d-sm-block d-none">
-              <p class="fw-semibold mb-0 lh-1">Json Taylor</p>
+              <p class="fw-semibold mb-0 lh-1">{$userData.fullName}</p>
               <span class="op-7 fw-normal d-block fs-11">Web Designer</span>
             </div>
           </div>
