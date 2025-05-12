@@ -8,7 +8,7 @@ export function getAPIURL() {
 
   return isLocal
     ? 'http://127.0.0.1:8000/api/agent/projeto/gerar'
-    : 'https://api.taskdemand.com/api/agent/projeto/gerar';
+    : 'https://straterkit-svelte.azurewebsites.net/api/agent/projeto/gerar';
 }
 
 export async function gerarEntregaveis(prompt) {
