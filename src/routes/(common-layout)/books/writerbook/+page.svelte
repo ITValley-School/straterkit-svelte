@@ -3,7 +3,6 @@
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
   import ListGroup from "$lib/@spk/ListGroup/SpkListGroup.svelte";
   import TopicItem from "$lib/components/newItvalley/TopicItem.svelte";
-  import { onMount } from "svelte";
   import { callBackendAPI } from "$lib/utils/requestUtils.js";
   import { Toast } from "@sveltestrap/sveltestrap";
 
@@ -12,7 +11,7 @@
   let books = data.books;
   let topics = data.topics;
 
-  let livroSelecionado = null;
+  let livroSelecionado = data.currentBookId;
   let selectedTopic = null;
   let selectedIndexPath = null;
   let selectedTopicId = null;
@@ -28,10 +27,6 @@
   };
 
   let file;
-
-  onMount(() => {
-    livroSelecionado = books[0].BookID;
-  });
 
   const handleAddChapter = async () => {
     [topics] = await callBackendAPI(fetch, null, `/chapters`, "POST", {
