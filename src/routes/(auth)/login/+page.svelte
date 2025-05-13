@@ -1,6 +1,10 @@
 <script>
   import { notificationData } from "$lib/store/notificationStore";
-  import { post, browserSet, browserGet } from "$lib/utils/requestUtils";
+  import {
+    callBackendAPI,
+    browserSet,
+    browserGet,
+  } from "$lib/utils/requestUtils";
   import { goto } from "$app/navigation";
   import Cookies from "js-cookie";
   // Check the environment (development or production)
@@ -35,7 +39,7 @@
     if (browserGet("refreshToken")) {
       localStorage.removeItem("refreshToken");
     }
-    const [jsonRes] = await post(fetch, "/auth/login", {
+    const [jsonRes] = await callBackendAPI(fetch, null, "/auth/login", "POST", {
       email: email,
       password: password,
     });

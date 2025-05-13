@@ -23,7 +23,13 @@ export const browserSet = (key, value) => {
   }
 };
 
-export const post = async (fetch, url, body) => {
+export const callBackendAPI = async (
+  fetch,
+  authToken,
+  url,
+  method = "GET",
+  body
+) => {
   try {
     const headers = {
       Authorization: "",
@@ -32,12 +38,13 @@ export const post = async (fetch, url, body) => {
       headers["Content-Type"] = "application/json";
       body = JSON.stringify(body);
     }
-    const token = browserGet("refreshToken");
+    const token = browserGet("refreshToken") || authToken;
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
+
     const res = await fetch(`${variables.BASE_API_URI}${url}`, {
-      method: "POST",
+      method,
       body,
       headers,
     });
@@ -47,8 +54,9 @@ export const post = async (fetch, url, body) => {
 
     if (!res.ok) return [{}, response];
 
-    return [response, []];
+    return [response, null];
   } catch (error) {
+    console.log(error);
     const errors = [
       { error: "An unknown error occurred." },
       { error: `${error} ` },

@@ -3,7 +3,7 @@
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
   import Spinner from "$lib/@spk/uielements/spinners/SpkSpinners.svelte";
   import { confirmSwal } from "$lib/components/confirmSwal.js";
-  import { post } from "$lib/utils/requestUtils.js";
+  import { callBackendAPI } from "$lib/utils/requestUtils.js";
   import { Label, Toast } from "@sveltestrap/sveltestrap";
   import { userData } from "$lib/store/userStore.js";
 
@@ -71,7 +71,13 @@
           );
           formData.append("file", capa);
 
-          const [result] = await post(fetch, "/books", formData);
+          const [result] = await callBackendAPI(
+            fetch,
+            null,
+            "/books",
+            "POST",
+            formData
+          );
 
           if (result.book_id) {
             handleClear();
