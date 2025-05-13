@@ -31,7 +31,6 @@
 
   onMount(() => {
     livroSelecionado = books[0].BookID;
-    carregarTopicos(livroSelecionado);
   });
 
   const handleAddChapter = async () => {
@@ -257,11 +256,11 @@
         <p>Aqui virão arquivos já enviados, com botão de reutilizar</p>
         <!-- Exemplo estático -->
         <ul class="list-group">
-          {#if selectedTopic && selectedTopic.audio_url}
+          {#if selectedTopic && selectedTopic.audio}
             <li
               class="list-group-item d-flex justify-content-between align-items-center"
             >
-              {new URLSearchParams(selectedTopic.audio_url).get("file_name")}
+              {new URLSearchParams(selectedTopic.audio.url).get("file_name")}
               <Button text="Usar" size="sm" color="primary" />
             </li>
           {/if}
