@@ -1,244 +1,244 @@
 <script>
-  import Card from "$lib/@spk/SpkBasicCard.svelte";
-  import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
-  import Spinner from "$lib/@spk/uielements/spinners/SpkSpinners.svelte";
-  import { confirmSwal } from "$lib/components/confirmSwal.js";
-  import { callBackendAPI } from "$lib/utils/requestUtils.js";
-  import { Label, Toast } from "@sveltestrap/sveltestrap";
-  import { userData } from "$lib/store/userStore.js";
+  // Importing necessary components and utilities
+  import Card from "$lib/@spk/SpkBasicCard.svelte"; // Custom card component
+  import Button from "$lib/@spk/uielements/Button/SpkButton.svelte"; // Custom button component
+  import { confirmSwal } from "$lib/components/confirmSwal.js"; // Utility for confirmation modals
+  import { callBackendAPI } from "$lib/utils/requestUtils.js"; // Utility for API calls
+  import { Input, Label } from "@sveltestrap/sveltestrap"; // Sveltestrap components for form inputs
+  import { userData } from "$lib/store/userStore.js"; // Store for user data
+  import ToastContainer from "$lib/components/ToastContainer.svelte"; // Toast notification container
+  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte"; // Loading spinner component
 
-  let titulo = "";
-  let subtitulo = "";
-  let categoria = 0;
-  let idioma = 0;
-  let publico = "";
-  let descricao = "";
-  let capa = null;
-  let coautores = [];
-  let novoCoautor = "";
-  let errors = {};
-  let isValid = false;
-  let fileInput;
-  let isLoading = false;
-  let toastParams = {
-    show: false,
-    type: "success",
-    message: "",
+  // Initializing form data and state variables
+  let formData = {
+    titulo: "", // Title of the book
+    subtitulo: "", // Subtitle of the book
+    categoria: 0, // Category ID
+    idioma: 0, // Language ID
+    publico: "", // Target audience
+    descricao: "", // General description
+    capa: null, // Cover image file
+    coautores: [], // List of co-authors
+    novoCoautor: "", // New co-author input
   };
+  let errors = {}; // Object to store validation errors
+  let isLoading = false; // Loading state for form submission
 
+  // Toast notification parameters
+  let toastParams = initializeToast();
+
+  // Function to initialize toast parameters
+  function initializeToast() {
+    return { show: false, type: "success", message: "" }; // Default toast state
+  }
+
+  // Function to add a co-author to the list
   function adicionarCoautor() {
-    if (novoCoautor.trim()) {
-      coautores = [...coautores, novoCoautor];
-      novoCoautor = "";
+    if (formData.novoCoautor.trim()) {
+      formData.coautores = [...formData.coautores, formData.novoCoautor]; // Add new co-author
+      formData.novoCoautor = ""; // Clear input field
     }
   }
 
+  // Form validation logic
   const validateForm = () => {
-    errors = {};
-    if (!titulo) errors.titulo = "Título é obrigatório";
-    if (!subtitulo) errors.subtitulo = "Subtítulo é obrigatório";
-    if (!categoria) errors.categoria = "Categoria é obrigatória";
-    if (!idioma) errors.idioma = "Idioma é obrigatório";
-    if (!publico) errors.publico = "Público-alvo é obrigatório";
-    if (!descricao) errors.descricao = "Descrição é obrigatória";
-    if (!capa) errors.capa = "Capa é obrigatória";
+    errors = {}; // Reset errors
+    if (!formData.titulo) errors.titulo = "Título é obrigatório"; // Title is required
+    if (!formData.subtitulo) errors.subtitulo = "Subtítulo é obrigatório"; // Subtitle is required
+    if (!formData.categoria) errors.categoria = "Categoria é obrigatória"; // Category is required
+    if (!formData.idioma) errors.idioma = "Idioma é obrigatório"; // Language is required
+    if (!formData.publico) errors.publico = "Público-alvo é obrigatório"; // Target audience is required
+    if (!formData.descricao) errors.descricao = "Descrição é obrigatória"; // Description is required
+    if (!formData.capa) errors.capa = "Capa é obrigatória"; // Cover image is required
 
-    isValid = true;
-
-    return Object.keys(errors).length === 0;
+    return Object.keys(errors).length === 0; // Return true if no errors
   };
 
+  // Function to handle form submission
   const handleSubmit = async () => {
-    if (validateForm()) {
-      confirmSwal(
-        "Are you sure you want to save this book?",
-        "",
-        "info",
-        async () => {
-          isLoading = true;
-          const formData = new FormData();
-          formData.append(
-            "info",
-            JSON.stringify({
-              Title: titulo,
-              SubTitle: subtitulo,
-              CategoryID: categoria,
-              LanguageID: idioma,
-              Audience: publico,
-              Description: descricao,
-              CoAuthors: coautores,
-            })
-          );
-          formData.append("file", capa);
+    if (!validateForm()) return; // Stop if validation fails
 
-          const [result] = await callBackendAPI(
-            fetch,
-            null,
-            "/books",
-            "POST",
-            formData
-          );
+    confirmSwal(
+      "Tem certeza de que deseja salvar este livro?", // Confirmation message
+      "",
+      "info",
+      async () => {
+        isLoading = true; // Show loading spinner
+        const formDataToSend = new FormData(); // Create FormData object
+        formDataToSend.append(
+          "info",
+          JSON.stringify({
+            Title: formData.titulo,
+            SubTitle: formData.subtitulo,
+            CategoryID: formData.categoria,
+            LanguageID: formData.idioma,
+            Audience: formData.publico,
+            Description: formData.descricao,
+            CoAuthors: formData.coautores,
+          })
+        );
+        formDataToSend.append("file", formData.capa); // Append cover image
 
-          if (result.book_id) {
-            handleClear();
-            toastParams = {
-              show: true,
-              type: "success",
-              message: "Book created successfully!",
-            };
-          } else {
-            toastParams = {
-              show: true,
-              type: "danger",
-              message: "Error creating book!",
-            };
-          }
+        const [result, error] = await callBackendAPI(
+          fetch,
+          null,
+          "/books",
+          "POST",
+          formDataToSend
+        );
 
-          isLoading = false;
+        if (result) {
+          handleClear(); // Clear form on success
+          showToast("success", "Livro salvo com sucesso!"); // Show success toast
+        } else {
+          showToast("danger", error.detail); // Show error toast
         }
-      );
-    }
+
+        isLoading = false; // Hide loading spinner
+      }
+    );
   };
 
+  // Function to clear the form
   const handleClear = () => {
-    titulo = "";
-    subtitulo = "";
-    categoria = 0;
-    idioma = 0;
-    publico = "";
-    descricao = "";
-    capa = null;
-    coautores = [];
-    novoCoautor = "";
-    errors = {};
-    isValid = false;
-    fileInput.value = "";
+    formData = {
+      titulo: "",
+      subtitulo: "",
+      categoria: 0,
+      idioma: 0,
+      publico: "",
+      descricao: "",
+      capa: null,
+      coautores: [],
+      novoCoautor: "",
+    }; // Reset form data
+    errors = {}; // Clear errors
+    const inputElement = document.getElementById("cover-image");
+    if (inputElement) inputElement.value = ""; // Reset file input
   };
 
+  // Function to close the toast notification
   const handleCloseToast = () => {
-    toastParams.show = false;
+    toastParams.show = false; // Hide toast
   };
+
+  // Function to show toast notifications
+  function showToast(type, message) {
+    toastParams = { show: true, type, message }; // Update toast parameters
+  }
 </script>
 
+{#if isLoading}
+  <LoadingSpinner /> <!-- Show loading spinner if isLoading is true -->
+{/if}
+
 <div class="row">
-  <div class={`col-md-8 needs-validation ${isValid ? "was-validated" : ""} `}>
+  <div class="col-md-8 needs-validation">
+    <!-- Form for book details -->
     <Card headerTitle="Cadastrar Novo Livro">
       <span slot="content">
         <div class="row g-3">
+          <!-- Title input -->
           <div class="col-md-6">
             <Label for="titulo">Título do Livro</Label>
-            <input
+            <Input
               type="text"
-              class="form-control"
               id="titulo"
-              bind:value={titulo}
-              required
+              bind:value={formData.titulo}
+              invalid={!!errors.titulo}
+              feedback={errors.titulo}
             />
-            {#if errors.titulo}
-              <div class="invalid-feedback">{errors.titulo}</div>
-            {/if}
           </div>
+          <!-- Subtitle input -->
           <div class="col-md-6">
             <Label for="subtitulo">Subtítulo</Label>
-            <input
+            <Input
               type="text"
-              class="form-control"
               id="subtitulo"
-              bind:value={subtitulo}
-              required
+              bind:value={formData.subtitulo}
+              invalid={!!errors.subtitulo}
+              feedback={errors.subtitulo}
             />
-            {#if errors.subtitulo}
-              <div class="invalid-feedback">{errors.subtitulo}</div>
-            {/if}
           </div>
+          <!-- Category dropdown -->
           <div class="col-md-6">
             <Label for="categoria">Categoria</Label>
-            <select
-              class="form-select"
+            <Input
+              type="select"
               id="categoria"
-              bind:value={categoria}
-              required
+              bind:value={formData.categoria}
+              invalid={!!errors.categoria}
+              feedback={errors.categoria}
             >
               <option value={1}>Ficção</option>
               <option value={2}>Não-ficção</option>
               <option value={3}>Técnico</option>
               <option value={4}>Autoajuda</option>
-            </select>
-            {#if errors.categoria}
-              <div class="invalid-feedback">{errors.categoria}</div>
-            {/if}
+            </Input>
           </div>
+          <!-- Language dropdown -->
           <div class="col-md-6">
             <Label for="idioma">Idioma</Label>
-            <select
-              class="form-select"
+            <Input
+              type="select"
               id="idioma"
-              bind:value={idioma}
-              required
+              bind:value={formData.idioma}
+              invalid={!!errors.idioma}
+              feedback={errors.idioma}
             >
               <option value={1}>Português (BR)</option>
               <option value={2}>Inglês</option>
               <option value={3}>Espanhol</option>
-            </select>
-            {#if errors.idioma}
-              <div class="invalid-feedback">{errors.idioma}</div>
-            {/if}
+            </Input>
           </div>
+          <!-- Target audience input -->
           <div class="col-12">
             <Label for="publico">Público-alvo / Objetivo</Label>
-            <textarea
-              class="form-control"
+            <Input
+              type="textarea"
               id="publico"
-              bind:value={publico}
+              bind:value={formData.publico}
               rows="2"
-              required
+              invalid={!!errors.publico}
+              feedback={errors.publico}
             />
-            {#if errors.publico}
-              <div class="invalid-feedback">{errors.publico}</div>
-            {/if}
           </div>
         </div>
       </span>
     </Card>
 
+    <!-- Description input -->
     <Card headerTitle="Descrição do Livro">
       <span slot="content">
         <Label for="descricao">Descrição Geral</Label>
-        <textarea
-          class="form-control"
+        <Input
+          type="textarea"
           id="descricao"
-          bind:value={descricao}
+          bind:value={formData.descricao}
           rows="5"
           maxlength="2000"
-          required
+          invalid={!!errors.descricao}
+          feedback={errors.descricao}
         />
-        {#if errors.descricao}
-          <div class="invalid-feedback">{errors.descricao}</div>
-        {/if}
       </span>
     </Card>
   </div>
 
   <div class="col-md-4">
+    <!-- Cover image upload -->
     <Card headerTitle="Capa do Livro">
-      <span
-        slot="content"
-        class={`needs-validation ${isValid ? "was-validated" : ""} `}
-      >
-        <input
+      <span slot="content" class="needs-validation">
+        <Input
           type="file"
-          bind:this={fileInput}
-          class="form-control mb-2"
+          id="cover-image"
           accept="image/*"
-          on:change={(e) => (capa = e.target.files[0])}
-          required
+          on:change={(e) => (formData.capa = e.target.files[0])}
+          invalid={!!errors.capa}
+          feedback={errors.capa}
         />
-        {#if errors.capa}
-          <div class="invalid-feedback">{errors.capa}</div>
-        {/if}
-        {#if capa}
+        {#if formData.capa}
           <img
-            src={URL.createObjectURL(capa)}
+            src={URL.createObjectURL(formData.capa)}
             alt="Preview da capa"
             class="img-fluid rounded shadow"
           />
@@ -246,13 +246,14 @@
       </span>
     </Card>
 
+    <!-- Co-authors section -->
     <Card headerTitle="Autores">
       <span slot="content">
         <p><strong>Autor Principal:</strong> {$userData.fullName}</p>
         <div class="input-group mb-2">
           <input
             class="form-control"
-            bind:value={novoCoautor}
+            bind:value={formData.novoCoautor}
             placeholder="Nome do coautor"
           />
           <button class="btn btn-outline-primary" on:click={adicionarCoautor}
@@ -260,59 +261,24 @@
           >
         </div>
         <ul class="ps-3">
-          {#each coautores as coautor}
+          {#each formData.coautores as coautor}
             <li>{coautor}</li>
           {/each}
         </ul>
       </span>
     </Card>
 
+    <!-- Action buttons -->
     <div class="d-flex justify-content-between mt-4">
       <Button
         text="Cancelar"
         color="outline-danger"
         onclickfunc={handleClear}
-        disabled={isLoading}
       />
-      <Button color="primary" onclickfunc={handleSubmit} disabled={isLoading}>
-        {#if isLoading}
-          <Spinner type="border" color="light" size="sm" />
-        {/if}
-        Salvar Livro
-      </Button>
+      <Button color="primary" onclickfunc={handleSubmit}>Salvar Livro</Button>
     </div>
   </div>
-  <div class="toast-container position-fixed top-0 end-0 p-3">
-    {#if toastParams.show}
-      <Toast
-        id="primaryToast"
-        color="primary"
-        class={`colored-toast ${toastParams.type === "success" ? "bg-success" : toastParams.type === "warning" ? "bg-warning" : "bg-danger"}-transparent`}
-        delay={3000}
-        autohide
-        aria-atomic="true"
-        on:close={() => (toastParams.show = false)}
-      >
-        <div
-          class={`toast-header ${toastParams.type === "success" ? "bg-success" : toastParams.type === "warning" ? "bg-warning" : "bg-danger"} text-fixed-white`}
-        >
-          <strong class="me-auto"
-            >{toastParams.type === "success"
-              ? "Success"
-              : toastParams.type === "warning"
-                ? "Warning"
-                : "Error"}</strong
-          >
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="toast"
-            aria-label="Close"
-            on:click={handleCloseToast}
-          ></button>
-        </div>
-        <div class="toast-body">{toastParams.message}</div>
-      </Toast>
-    {/if}
-  </div>
+
+  <!-- Toast notification container -->
+  <ToastContainer bind:toastParams onClose={handleCloseToast} />
 </div>

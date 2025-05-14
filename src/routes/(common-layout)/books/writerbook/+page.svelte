@@ -1,155 +1,254 @@
 <script>
+  // Importing necessary components and utilities
   import Card from "$lib/@spk/SpkBasicCard.svelte";
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
   import ListGroup from "$lib/@spk/ListGroup/SpkListGroup.svelte";
   import TopicItem from "$lib/components/newItvalley/TopicItem.svelte";
   import { callBackendAPI } from "$lib/utils/requestUtils.js";
-  import { Toast } from "@sveltestrap/sveltestrap";
+  import { confirmSwal } from "$lib/components/confirmSwal.js";
+  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import ToastContainer from "$lib/components/ToastContainer.svelte";
 
+  // Data passed to the component
   export let data;
 
-  let books = data.books;
-  let topics = data.topics;
+  // Destructuring data into variables
+  let { books, topics, currentBookId: livroSelecionado } = data;
+  let selectedTopic = null; // Currently selected topic
+  let selectedIndexPath = null; // Index path of the selected topic
+  let selectedTopicId = null; // ID of the selected topic
 
-  let livroSelecionado = data.currentBookId;
-  let selectedTopic = null;
-  let selectedIndexPath = null;
-  let selectedTopicId = null;
-
+  // Topic details
   let selectedTopicTitle = "";
   let selectedTopicDescription = "";
   let selectedTopicTranscription = "";
 
-  let toastParams = {
-    show: false,
-    type: "success",
-    message: "",
-  };
+  let isLoading = false; // Loading state
+  let toastParams = initializeToast(); // Toast notification parameters
+  let fileInput; // File input element reference
+  let file; // Selected file for upload
 
-  let file;
+  // Initialize toast parameters
+  function initializeToast() {
+    return { show: false, type: "success", message: "" };
+  }
 
-  const handleAddChapter = async () => {
-    [topics] = await callBackendAPI(fetch, null, `/chapters`, "POST", {
-      bookId: livroSelecionado,
-    });
+  // Reset all selection-related variables
+  function resetSelection() {
     selectedTopic = null;
-  };
+    selectedIndexPath = null;
+    selectedTopicId = null;
+    selectedTopicTitle = "";
+    selectedTopicDescription = "";
+    selectedTopicTranscription = "";
+    file = null;
+    if (fileInput) fileInput.value = "";
+  }
 
-  const carregarTopicos = async (livroId) => {
-    [topics] = await callBackendAPI(
+  // Generic function to handle API actions
+  async function handleAction(url, method, body = null, successMessage = "") {
+    isLoading = true;
+    const [result, error] = await callBackendAPI(
       fetch,
       null,
-      `/chapters/get_all_by_book_id/${livroId}`,
-      "GET"
+      url,
+      method,
+      body
     );
-  };
+    isLoading = false;
 
-  const handleAddTopic = async (topicId, indexPath) => {
-    [topics] = await callBackendAPI(fetch, null, `/topics/${topicId}`, "POST", {
-      indexPath,
-      bookId: livroSelecionado,
-    });
-    selectedTopic = null;
-  };
+    if (result) {
+      topics = result; // Update topics list
+      resetSelection();
+      if (successMessage) showToast("success", successMessage);
+    } else {
+      showToast("danger", error?.detail || "Erro ao realizar a ação.");
+    }
+  }
 
-  const handleDeleteTopic = async (topicId, indexPath) => {
-    [topics] = await callBackendAPI(
-      fetch,
-      null,
-      `/topics/${topicId}`,
-      "DELETE",
-      {
-        indexPath,
-        bookId: livroSelecionado,
-      }
+  // Add a new chapter
+  const handleAddChapter = () =>
+    confirmSwal(
+      "Tem certeza de que deseja adicionar um novo capítulo?",
+      "",
+      "info",
+      () =>
+        handleAction(
+          "/chapters",
+          "POST",
+          { bookId: livroSelecionado },
+          "Capítulo adicionado com sucesso!"
+        )
     );
-    selectedTopic = null;
+
+  // Load topics for a selected book
+  const carregarTopicos = (livroId) => {
+    resetSelection();
+    handleAction(`/chapters/get_all_by_book_id/${livroId}`, "GET");
   };
 
+  // Add a new topic
+  const handleAddTopic = (topicId, indexPath) =>
+    confirmSwal(
+      "Tem certeza de que deseja adicionar um novo tópico?",
+      "",
+      "info",
+      () =>
+        handleAction(
+          `/topics/${topicId}`,
+          "POST",
+          { indexPath, bookId: livroSelecionado },
+          "Tópico adicionado com sucesso!"
+        )
+    );
+
+  // Delete a topic
+  const handleDeleteTopic = (topicId, indexPath) =>
+    confirmSwal(
+      "Tem certeza de que deseja excluir este tópico?",
+      "",
+      "warning",
+      () =>
+        handleAction(
+          `/topics/${topicId}`,
+          "DELETE",
+          { indexPath, bookId: livroSelecionado },
+          "Tópico excluído com sucesso!"
+        )
+    );
+
+  // Select a topic and load its details
   const handleSelectTopic = async (topicId, indexPath) => {
+    isLoading = true;
     selectedIndexPath = indexPath;
     selectedTopicId = topicId;
+
     const params = new URLSearchParams({ indexPath });
-    [selectedTopic] = await callBackendAPI(
+    const [result, error] = await callBackendAPI(
       fetch,
       null,
       `/topics/${topicId}?${params.toString()}`,
       "GET"
     );
 
-    selectedTopicTitle = selectedTopic.title || "";
-    selectedTopicDescription = selectedTopic.description || "";
-    selectedTopicTranscription = selectedTopic.transcription || "";
-  };
-
-  const handleTopicInfoSave = async () => {
-    [topics] = await callBackendAPI(
-      fetch,
-      null,
-      `/topics/${selectedTopicId}`,
-      "PUT",
-      {
-        title: selectedTopicTitle,
-        description: selectedTopicDescription,
-        transcription: selectedTopicTranscription,
-        indexPath: selectedIndexPath,
-        bookId: livroSelecionado,
-      }
-    );
-  };
-
-  const handleUploadFile = async () => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("info", JSON.stringify({ indexPath: selectedIndexPath }));
-
-    [selectedTopic] = await callBackendAPI(
-      fetch,
-      null,
-      `/topics/${selectedTopicId}/upload_file`,
-      "POST",
-      formData
-    );
-  };
-
-  const handleImproveWithAI = async () => {
-    let [result, error] = await callBackendAPI(
-      fetch,
-      null,
-      `/topics/${selectedTopicId}/improve_with_ai`,
-      "POST",
-      {
-        indexPath: selectedIndexPath,
-      }
-    );
+    isLoading = false;
 
     if (error) {
-      toastParams = {
-        show: true,
-        type: "danger",
-        message: error.detail,
-      };
+      showToast("danger", error?.detail || "Erro ao carregar os tópicos.");
     } else {
-      selectedTopicTranscription = result;
-      toastParams = {
-        show: true,
-        type: "success",
-        message: "Transcription improved successfully!",
-      };
+      selectedTopic = result;
+      selectedTopicTitle = selectedTopic.title || "";
+      selectedTopicDescription = selectedTopic.description || "";
+      selectedTopicTranscription = selectedTopic.transcription || "";
     }
   };
 
-  const handleCloseToast = () => {
-    toastParams.show = false;
-  };
+  // Save topic information
+  const handleTopicInfoSave = () =>
+    confirmSwal(
+      "Tem certeza de que deseja salvar as informações deste tópico?",
+      "",
+      "warning",
+      () =>
+        handleAction(
+          `/topics/${selectedTopicId}`,
+          "PUT",
+          {
+            title: selectedTopicTitle,
+            description: selectedTopicDescription,
+            transcription: selectedTopicTranscription,
+            indexPath: selectedIndexPath,
+            bookId: livroSelecionado,
+          },
+          "Informações do tópico salvas com sucesso!"
+        )
+    );
+
+  // Upload a file
+  const handleUploadFile = () =>
+    confirmSwal(
+      "Tem certeza de que deseja fazer o upload deste arquivo?",
+      "",
+      "warning",
+      async () => {
+        isLoading = true;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append(
+          "info",
+          JSON.stringify({ indexPath: selectedIndexPath })
+        );
+
+        const [result, error] = await callBackendAPI(
+          fetch,
+          null,
+          `/topics/${selectedTopicId}/upload_file`,
+          "POST",
+          formData
+        );
+
+        isLoading = false;
+
+        if (result) {
+          resetSelection();
+          showToast("success", "Arquivo enviado com sucesso!");
+        } else {
+          showToast("danger", error?.detail || "Erro ao enviar o arquivo.");
+        }
+      }
+    );
+
+  // Improve transcription using AI
+  const handleImproveWithAI = () =>
+    confirmSwal(
+      "Tem certeza de que deseja melhorar a transcrição com IA?",
+      "",
+      "warning",
+      async () => {
+        isLoading = true;
+
+        const [result, error] = await callBackendAPI(
+          fetch,
+          null,
+          `/topics/${selectedTopicId}/improve_with_ai`,
+          "POST",
+          { indexPath: selectedIndexPath }
+        );
+
+        isLoading = false;
+
+        if (result) {
+          selectedTopicTranscription = result;
+          showToast("success", "Transcrição melhorada com sucesso!");
+        } else {
+          showToast(
+            "danger",
+            error?.detail || "Erro ao melhorar a transcrição."
+          );
+        }
+      }
+    );
+
+  // Show toast notification
+  function showToast(type, message) {
+    toastParams = { show: true, type, message };
+  }
+
+  // Close toast notification
+  const handleCloseToast = () => (toastParams.show = false);
 </script>
 
+{#if isLoading}
+  <LoadingSpinner />
+{/if}
+
+<!-- Book selection dropdown -->
 <div class="row mb-4">
   <div class="col-md-4">
     <label class="form-label" for="select-livro">Selecionar Livro</label>
     <select
       id="select-livro"
-      placeholder="Selecione um livro"
       class="form-select"
       bind:value={livroSelecionado}
       on:change={() => carregarTopicos(livroSelecionado)}
@@ -162,13 +261,14 @@
 </div>
 
 <div class="row">
-  <!-- Estrutura -->
+  <!-- Book structure section -->
   <div class="col-md-4">
     <Card cardProps="mb-4" headerTitle="Estrutura do Livro" Headerprops="pb-2">
       <span slot="content">
         <ListGroup CustomClass="nested-list">
-          {#each topics as topic}
+          {#each topics as topic, i}
             <TopicItem
+              chapterIndex={i}
               {topic}
               {handleAddTopic}
               {handleDeleteTopic}
@@ -182,12 +282,13 @@
           text="+ Adicionar tópico"
           color="link"
           onclickfunc={handleAddChapter}
+          disabled={!livroSelecionado}
         />
       </span>
     </Card>
   </div>
 
-  <!-- Editor -->
+  <!-- Transcription editor section -->
   <div class="col-md-8">
     <Card headerTitle="Editor de Transcrição">
       <span slot="content">
@@ -208,10 +309,11 @@
         <span class="form-label">
           Transcrição
           <Button
-            text="Improve with IA"
+            text="Melhore com IA"
             color="outline-success"
             size="sm"
             onclickfunc={handleImproveWithAI}
+            disabled={!selectedTopic}
           />
         </span>
         <textarea
@@ -222,14 +324,16 @@
         ></textarea>
         <div class="d-flex gap-2 mb-3 justify-content-end">
           <Button
-            text="Save"
+            text="Salvar"
             color="outline-success"
             onclickfunc={handleTopicInfoSave}
+            disabled={!selectedTopic}
           />
         </div>
       </span>
     </Card>
 
+    <!-- File upload section -->
     <Card headerTitle="Biblioteca do Livro" class="mt-4">
       <span slot="content">
         <span class="form-label">
@@ -239,17 +343,17 @@
             size="sm"
             color="primary"
             onclickfunc={handleUploadFile}
-            disabled={!file}
+            disabled={!file || !selectedTopic}
           />
         </span>
         <input
           type="file"
+          bind:this={fileInput}
           class="form-control mb-3"
           accept="image/*,audio/*"
           on:change={(e) => (file = e.target.files[0])}
         />
         <p>Aqui virão arquivos já enviados, com botão de reutilizar</p>
-        <!-- Exemplo estático -->
         <ul class="list-group">
           {#if selectedTopic && selectedTopic.audio}
             <li
@@ -265,7 +369,6 @@
                 class="list-group-item d-flex justify-content-between align-items-center"
               >
                 {new URLSearchParams(image.url).get("file_name")}
-                <Button text="Usar" size="sm" color="primary" />
               </li>
             {/each}
           {/if}
@@ -274,37 +377,6 @@
     </Card>
   </div>
 
-  <div class="toast-container position-fixed top-0 end-0 p-3">
-    {#if toastParams.show}
-      <Toast
-        id="primaryToast"
-        color="primary"
-        class={`colored-toast ${toastParams.type === "success" ? "bg-success" : toastParams.type === "warning" ? "bg-warning" : "bg-danger"}-transparent`}
-        delay={3000}
-        autohide
-        aria-atomic="true"
-        on:close={() => (toastParams.show = false)}
-      >
-        <div
-          class={`toast-header ${toastParams.type === "success" ? "bg-success" : toastParams.type === "warning" ? "bg-warning" : "bg-danger"} text-fixed-white`}
-        >
-          <strong class="me-auto"
-            >{toastParams.type === "success"
-              ? "Success"
-              : toastParams.type === "warning"
-                ? "Warning"
-                : "Error"}</strong
-          >
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="toast"
-            aria-label="Close"
-            on:click={handleCloseToast}
-          ></button>
-        </div>
-        <div class="toast-body">{toastParams.message}</div>
-      </Toast>
-    {/if}
-  </div>
+  <!-- Toast notification container -->
+  <ToastContainer bind:toastParams onClose={handleCloseToast} />
 </div>

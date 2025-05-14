@@ -12,7 +12,11 @@ export const load = async ({ fetch, cookies, url }) => {
 
   let topics = [];
 
-  const currentBookId = bookId ? parseInt(bookId) : books[0].BookID;
+  const currentBookId = books.length
+    ? bookId
+      ? parseInt(bookId)
+      : books[0].BookID
+    : null;
 
   if (books.length > 0)
     [topics] = await callBackendAPI(

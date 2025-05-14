@@ -9,12 +9,12 @@
     FormGroup,
     Label,
     Input,
-    Toast,
   } from "@sveltestrap/sveltestrap";
   import { confirmSwal } from "$lib/components/confirmSwal.js";
   import { callBackendAPI } from "$lib/utils/requestUtils.js";
   import { userData } from "$lib/store/userStore.js";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import ToastContainer from "$lib/components/ToastContainer.svelte";
 
   // Props passed to the component
   export let data;
@@ -290,38 +290,5 @@
     </SpkBasicCard>
   </Col>
 
-  <!-- Toast notification container -->
-  <div class="toast-container position-fixed top-0 end-0 p-3">
-    {#if toastParams.show}
-      <Toast
-        id="primaryToast"
-        color="primary"
-        class={`colored-toast ${toastParams.type === "success" ? "bg-success" : toastParams.type === "warning" ? "bg-warning" : "bg-danger"}-transparent`}
-        delay={3000}
-        autohide
-        aria-atomic="true"
-        on:close={handleCloseToast}
-      >
-        <div
-          class={`toast-header ${toastParams.type === "success" ? "bg-success" : toastParams.type === "warning" ? "bg-warning" : "bg-danger"} text-fixed-white`}
-        >
-          <strong class="me-auto">
-            {toastParams.type === "success"
-              ? "Success"
-              : toastParams.type === "warning"
-                ? "Warning"
-                : "Error"}
-          </strong>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="toast"
-            aria-label="Close"
-            on:click={handleCloseToast}
-          ></button>
-        </div>
-        <div class="toast-body">{toastParams.message}</div>
-      </Toast>
-    {/if}
-  </div>
+  <ToastContainer bind:toastParams onClose={handleCloseToast} />
 </Row>
