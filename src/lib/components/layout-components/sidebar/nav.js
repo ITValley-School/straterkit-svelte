@@ -45,6 +45,12 @@ export const menuData = [
     },
     {
       type: 'link',
+      title: 'Criar Projeto',
+      icon: 'bx bx-pie-chart-alt',
+      path: '/project/createproject'
+    },
+    {
+      type: 'link',
       title: 'Dashboard Admin',
       icon: 'bx bx-pie-chart-alt',
       path: '/admin/dashboard'
