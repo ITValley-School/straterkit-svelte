@@ -7,6 +7,8 @@
   } from "$lib/utils/requestUtils";
   import { goto } from "$app/navigation";
   import Cookies from "js-cookie";
+  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import ToastContainer from "$lib/components/ToastContainer.svelte";
   // Check the environment (development or production)
   const basePath = __BASE_PATH__;
 
@@ -16,6 +18,18 @@
   let show_password = false;
   $: type = show_password ? "text" : "password";
   let value = password;
+
+  let toastParams = initializeToast(); // Toast notification parameters
+  let isLoading = false; // Loading state
+
+  // Function to initialize toast parameters
+  function initializeToast() {
+    return {
+      show: false,
+      type: "success",
+      message: "",
+    };
+  }
 
   function onInput(event) {
     value = event.target.value;
@@ -39,30 +53,62 @@
     if (browserGet("refreshToken")) {
       localStorage.removeItem("refreshToken");
     }
-    const [jsonRes] = await callBackendAPI(fetch, null, "/auth/login", "POST", {
-      email: email,
-      password: password,
-    });
-    const response = jsonRes;
 
-    if (response.access_token) {
-      Cookies.set("refreshToken", response.access_token, {
-        expires: 1,
-        secure: true,
-        sameSite: "Strict",
-      });
-      browserSet("refreshToken", response.access_token);
-      notificationData.update(() => {
-        "Login successful...";
-      });
-      await goto("/");
+    isLoading = true;
+
+    const [jsonRes, error] = await callBackendAPI(
+      fetch,
+      null,
+      "/auth/login",
+      "POST",
+      {
+        email: email,
+        password: password,
+      }
+    );
+
+    if (jsonRes) {
+      const response = jsonRes;
+
+      if (response.access_token) {
+        Cookies.set("refreshToken", response.access_token, {
+          expires: 1,
+          secure: true,
+          sameSite: "Strict",
+        });
+        browserSet("refreshToken", response.access_token);
+        notificationData.update(() => {
+          "Login successful...";
+        });
+        await goto("/dashboards/crm");
+        showToast("success", "Perfil atualizado com sucesso!");
+      }
+    } else {
+      showToast("danger", error.detail);
     }
+
+    isLoading = false;
   };
+
+  // Function to close the toast notification
+  function handleCloseToast() {
+    toastParams.show = false;
+  }
+
+  // Function to show toast notifications
+  function showToast(type, message) {
+    toastParams = { show: true, type, message };
+  }
 </script>
 
 <svelte:head>
   <title>Home</title>
 </svelte:head>
+
+{#if isLoading}
+  <!-- Display loading spinner while saving data -->
+  <LoadingSpinner />
+{/if}
 
 <div class="container">
   <div
@@ -185,4 +231,6 @@
       </div>
     </div>
   </div>
+
+  <ToastContainer bind:toastParams onClose={handleCloseToast} />
 </div>
