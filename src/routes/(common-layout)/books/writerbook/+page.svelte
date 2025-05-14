@@ -1,5 +1,6 @@
 <script>
   // Importing necessary components and utilities
+  import { onMount } from "svelte";
   import Card from "$lib/@spk/SpkBasicCard.svelte";
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
   import ListGroup from "$lib/@spk/ListGroup/SpkListGroup.svelte";
@@ -9,11 +10,10 @@
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
 
-  // Data passed to the component
-  export let data;
-
   // Destructuring data into variables
-  let { books, topics, currentBookId: livroSelecionado } = data;
+  let books = [],
+    topics = [],
+    livroSelecionado = null;
   let selectedTopic = null; // Currently selected topic
   let selectedIndexPath = null; // Index path of the selected topic
   let selectedTopicId = null; // ID of the selected topic
@@ -27,6 +27,37 @@
   let toastParams = initializeToast(); // Toast notification parameters
   let fileInput; // File input element reference
   let file; // Selected file for upload
+
+  onMount(async () => {
+    isLoading = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const bookId = params.get("bookId");
+
+    const [_books] = await callBackendAPI(fetch, null, "/books", "GET");
+
+    const _livroSelecionado = _books.length
+      ? bookId
+        ? parseInt(bookId)
+        : _books[0].BookID
+      : null;
+
+    let _topics = [];
+
+    if (_books.length > 0)
+      [_topics] = await callBackendAPI(
+        fetch,
+        null,
+        `/chapters/get_all_by_book_id/${_livroSelecionado}`,
+        "GET"
+      );
+
+    books = _books;
+    topics = _topics;
+    livroSelecionado = _livroSelecionado;
+
+    isLoading = false;
+  });
 
   // Initialize toast parameters
   function initializeToast() {

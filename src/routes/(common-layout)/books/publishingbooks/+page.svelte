@@ -1,5 +1,6 @@
 <script>
   // Import necessary modules and components
+  import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import Card from "$lib/@spk/SpkBasicCard.svelte";
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
@@ -9,11 +10,8 @@
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
 
-  // Data passed to the component
-  export let data;
-
   // Initialize books and other state variables
-  let books = data.books;
+  let books = [];
   let toastParams = initializeToast();
   let isLoading = false;
   const DATALAKE_URL = import.meta.env.VITE_BASE_AZURE_DATALAKE_URL;
@@ -24,6 +22,17 @@
     revisao: { text: "Em Revisão", color: "warning" },
     publicado: { text: "Publicado", color: "success" },
   };
+
+  // Lifecycle hook to initialize selected book and filter assets
+  onMount(async () => {
+    isLoading = true;
+
+    const [_books] = await callBackendAPI(fetch, null, "/books", "GET");
+
+    books = _books;
+
+    isLoading = false;
+  });
 
   // Function to initialize toast parameters
   function initializeToast() {

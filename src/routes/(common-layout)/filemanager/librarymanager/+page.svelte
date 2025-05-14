@@ -7,11 +7,9 @@
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
 
-  export let data;
-
   // Initialize variables for books, topics, assets, and UI states
-  let books = data.books;
-  let topics = data.topics;
+  let books = [];
+  let topics = [];
   let assets = [];
   let livroSelecionado = null;
   let isLoading = false;
@@ -21,10 +19,28 @@
   const DATALAKE_URL = import.meta.env.VITE_BASE_AZURE_DATALAKE_URL;
 
   // Lifecycle hook to initialize selected book and filter assets
-  onMount(() => {
+  onMount(async () => {
+    isLoading = true;
+
+    const [_books] = await callBackendAPI(fetch, null, "/books", "GET");
+
+    let _topics = [];
+
+    if (_books.length > 0)
+      [_topics] = await callBackendAPI(
+        fetch,
+        null,
+        `/chapters/get_all_by_book_id/${_books[0].BookID}`,
+        "GET"
+      );
+
+    books = _books;
+    topics = _topics;
     livroSelecionado = 0;
     assets = [];
     filterAssets(topics);
+
+    isLoading = false;
   });
 
   // Initialize toast parameters
