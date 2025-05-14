@@ -52,7 +52,7 @@ export const callBackendAPI = async (
 
     const response = await res.json();
 
-    if (!res.ok) return [{}, response];
+    if (!res.ok) return [null, response];
 
     return [response, null];
   } catch (error) {
