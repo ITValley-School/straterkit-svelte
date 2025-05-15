@@ -60,6 +60,7 @@ export const callBackendAPI = async (
     }
 
     const res = await fetch(`${variables.BASE_API_URI}${url}`, {
+      mode: "cors",
       method,
       body,
       headers,
