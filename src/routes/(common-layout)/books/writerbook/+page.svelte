@@ -32,7 +32,7 @@
     isLoading = true;
 
     const params = new URLSearchParams(window.location.search);
-    const bookId = params.get("bookId");
+    const bookId = params.get("book_id");
 
     const [_books] = await callBackendAPI(fetch, null, "/books", "GET");
 

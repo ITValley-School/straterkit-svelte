@@ -16,15 +16,12 @@
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
 
-  // Props passed to the component
-  export let data;
-
   // Environment variable for Azure Data Lake URL
   const DATALAKE_URL = import.meta.env.VITE_BASE_AZURE_DATALAKE_URL;
 
   // Local state variables
   let file = null; // Holds the uploaded file
-  let user = initializeUser(data.user); // User data initialization
+  let user = initializeUser($userData); // User data initialization
   let errors = {}; // Form validation errors
   let toastParams = initializeToast(); // Toast notification parameters
   let fileInput; // Reference to the file input element
