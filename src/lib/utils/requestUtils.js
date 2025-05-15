@@ -82,7 +82,9 @@ export const callBackendAPI = async (
  * @param {string} token - The authentication token.
  * @returns {Promise<[Object, Array]>} - The user data and errors.
  */
-export const getCurrentUser = async (fetch, userUrl, token) => {
+export const getCurrentUser = async (fetch, userUrl) => {
+  const token = browserGet("refreshToken");
+
   const res = await fetch(`${variables.BASE_API_URI}${userUrl}`, {
     headers: { Authorization: `Bearer ${token}` },
   });

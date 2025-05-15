@@ -5,8 +5,8 @@
 
   let isAuthenticated = getItem("refreshToken");
   onMount(() => {
-    goto(`/dashboards/crm`);
     if (isAuthenticated) {
+      goto(`/dashboards/crm`);
     } else {
       goto(`/login `);
     }
