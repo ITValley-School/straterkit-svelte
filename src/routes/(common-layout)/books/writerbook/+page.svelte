@@ -108,7 +108,15 @@
     isLoading = false;
 
     if (result) {
-      topic = { id: -1, title: "", children: result }; // Update topic list
+      topic = {
+        id: -1,
+        title: "",
+        children: result.map((item) => {
+          if (nodes?.[item._id]?.collapsed != undefined)
+            return { ...item, collapsed: nodes?.[item._id]?.collapsed };
+          return { ...item };
+        }),
+      }; // Update topic list
       updateNodes();
       resetSelection();
       if (successMessage) showToast("success", successMessage);

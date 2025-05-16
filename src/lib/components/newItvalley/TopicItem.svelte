@@ -63,8 +63,8 @@
       {/if}
 
       {node.indexPath.length == 1
-        ? `Capítulo ${node.indexPath[0] + 1}. `
-        : `Tópica ${node.indexPath
+        ? `Chapter ${node.indexPath[0] + 1}. `
+        : `Topic ${node.indexPath
             .slice(1)
             .map((path) => path + 1)
             .join(".")}. `}
@@ -96,11 +96,23 @@
           }}
           disabled={!!selectedTopicId}
         />
+        {#if node.indexPath.length == 1}
+          <Button
+            text={node.collapsed ? "▲" : "▼"}
+            color="outline-primary"
+            size="sm"
+            onclickfunc={(e) => {
+              e.stopPropagation();
+              node.collapsed = !node.collapsed;
+            }}
+            disabled={!!selectedTopicId}
+          />
+        {/if}
       </div>
     </li>
   {/if}
 
-  {#if node?.children}
+  {#if node?.children && (node.collapsed == undefined || !node.collapsed)}
     {#if node.indexPath.length > 0}
       <section
         use:dragHandleZone={{
