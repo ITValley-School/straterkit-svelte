@@ -1,82 +1,153 @@
 <script>
   // Importing the Button component and the TopicItem component
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
-  import TopicItem from "./TopicItem.svelte";
+  import { flip } from "svelte/animate";
+  import { dragHandleZone, dragHandle } from "svelte-dnd-action";
 
-  // Props passed to the component
-  export let chapterIndex = null; // Index of the chapter (if applicable)
-  export let topic; // Topic object containing details about the topic
-  export let indexPath = []; // Path to the topic in the hierarchy
-  export let topicId; // Unique identifier for the topic
+  const flipDurationMs = 300;
+
+  export let nodes;
+  export let node;
+  export let onFinalize;
   export let handleAddTopic; // Function to handle adding a new topic
   export let handleDeleteTopic; // Function to handle deleting a topic
-  export let onSelect; // Function to handle selecting a topic
+  export let handleSelectTopic; // Function to handle selecting a topic
   export let selectedTopicId; // ID of the currently selected topic
 
   // Reactive statement to determine if the current topic is selected
-  $: isSelected = topic._id === selectedTopicId;
+  $: isSelected = node?.id === selectedTopicId;
 
-  // Function to handle editing a topic
-  const handleEditTopic = async () => {
-    onSelect(topicId, indexPath);
+  const handleDndConsider = (e) => {
+    node.children = e.detail.items;
+  };
+
+  const handleDndFinalize = (e) => {
+    const destinationIndex = node.children.findIndex(
+      (child) => child.id == e.detail.info.id
+    );
+
+    if (destinationIndex != -1) {
+      const sourcePath = nodes[e.detail.info.id].indexPath;
+      const destinationPath = node.indexPath;
+      if (
+        JSON.stringify(sourcePath) !==
+        JSON.stringify([...destinationPath, destinationIndex])
+      )
+        onFinalize(
+          nodes[e.detail.info.id].indexPath,
+          node.indexPath,
+          destinationIndex
+        );
+    }
   };
 </script>
 
 <!-- List item representing a topic -->
-<li
-  class="list-group-item d-flex justify-content-between align-items-center {isSelected
-    ? 'active'
-    : ''}"
->
-  <div class="d-flex align-items-center">
-    <!-- Display chapter or topic index based on the context -->
-    {chapterIndex !== null
-      ? `Capítulo ${chapterIndex + 1}. `
-      : `Tópica ${indexPath.map((path) => path + 1).join(".")}. `}
+<div class="node-container">
+  {#if node && node.indexPath?.length}
+    <li
+      class="list-group-item d-flex justify-content-between align-items-center {isSelected
+        ? 'active'
+        : ''}"
+      on:click={() => handleSelectTopic(node.indexPath)}
+    >
+      {#if node.indexPath.length > 1}
+        <div use:dragHandle class="bi bi-grip-vertical me-2 text-muted"></div>
+      {/if}
 
-    <!-- Display the topic title -->
-    {topic.title}
-  </div>
-  <div>
-    <!-- Button to add a new topic -->
-    <Button
-      text="+"
-      color="outline-success"
-      size="sm"
-      customClass="me-1"
-      onclickfunc={() => handleAddTopic(topicId, indexPath)}
-    />
-    <!-- Button to edit the current topic -->
-    <Button
-      text="✎"
-      color="outline-primary"
-      size="sm"
-      customClass="me-1"
-      onclickfunc={handleEditTopic}
-    />
-    <!-- Button to delete the current topic -->
-    <Button
-      text="🗑"
-      color="outline-danger"
-      size="sm"
-      onclickfunc={() => handleDeleteTopic(topicId, indexPath)}
-    />
-  </div>
-</li>
+      {node.indexPath.length == 1
+        ? `Capítulo ${node.indexPath[0] + 1}. `
+        : `Tópica ${node.indexPath
+            .slice(1)
+            .map((path) => path + 1)
+            .join(".")}. `}
 
-<!-- Render child topics if they exist -->
-{#if topic.children && topic.children.length > 0}
-  <ul class="list-group ms-4 mt-1">
-    {#each topic.children as child, i}
-      <TopicItem
-        topic={child}
-        {topicId}
-        indexPath={[...indexPath, i]}
-        {handleAddTopic}
-        {handleDeleteTopic}
-        {onSelect}
-        {selectedTopicId}
-      />
-    {/each}
-  </ul>
-{/if}
+      <!-- Display the topic title -->
+      {node.title}
+
+      <div class="ms-auto">
+        <!-- Button to add a new topic -->
+        <Button
+          text="+"
+          color="outline-success"
+          size="sm"
+          customClass="me-1"
+          onclickfunc={() => handleAddTopic(node.indexPath)}
+          disabled={!!selectedTopicId}
+        />
+        <!-- Button to delete the current topic -->
+        <Button
+          text="🗑"
+          color="outline-danger"
+          size="sm"
+          onclickfunc={() => handleDeleteTopic(node.indexPath)}
+          disabled={!!selectedTopicId}
+        />
+      </div>
+    </li>
+  {/if}
+
+  {#if node?.children}
+    {#if node.indexPath.length > 0}
+      <section
+        use:dragHandleZone={{
+          items: node.children,
+          flipDurationMs,
+          morphDisabled: true,
+          centreDraggedOnCursor: true,
+        }}
+        on:consider={handleDndConsider}
+        on:finalize={handleDndFinalize}
+      >
+        {#each node.children as child, i (child.id)}
+          <div animate:flip={{ duration: flipDurationMs }} class="item visible">
+            <svelte:self
+              bind:nodes
+              node={nodes[child.id]}
+              {onFinalize}
+              {handleAddTopic}
+              {handleDeleteTopic}
+              {handleSelectTopic}
+              {selectedTopicId}
+            />
+          </div>
+        {/each}
+      </section>
+    {:else}
+      <div>
+        {#each node.children as child (child.id)}
+          <svelte:self
+            bind:nodes
+            node={nodes[child.id]}
+            {onFinalize}
+            {handleAddTopic}
+            {handleDeleteTopic}
+            {handleSelectTopic}
+            {selectedTopicId}
+          />
+        {/each}
+      </div>
+    {/if}
+  {/if}
+</div>
+
+<style>
+  .node-container {
+    margin-left: 1em;
+    padding: 0.5em 0 0.5em 0.5em;
+    border-left: 1px solid #eee;
+  }
+
+  section {
+    width: auto;
+    border: 0px solid black;
+    padding: 0.4em 0 0.4em 0.4em;
+    overflow-y: auto;
+    min-height: 30px;
+    background-color: rgba(100, 100, 100, 0.1);
+  }
+
+  .item {
+    background-color: rgba(0, 100, 100, 0.1);
+  }
+</style>

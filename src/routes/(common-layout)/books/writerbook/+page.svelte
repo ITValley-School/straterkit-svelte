@@ -3,7 +3,6 @@
   import { onMount } from "svelte";
   import Card from "$lib/@spk/SpkBasicCard.svelte";
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
-  import ListGroup from "$lib/@spk/ListGroup/SpkListGroup.svelte";
   import TopicItem from "$lib/components/newItvalley/TopicItem.svelte";
   import { callBackendAPI } from "$lib/utils/requestUtils.js";
   import { confirmSwal } from "$lib/components/confirmSwal.js";
@@ -12,8 +11,10 @@
 
   // Destructuring data into variables
   let books = [],
-    topics = [],
+    topic = {},
     livroSelecionado = null;
+  let original = null;
+  let nodes = {};
   let selectedTopic = null; // Currently selected topic
   let selectedIndexPath = null; // Index path of the selected topic
   let selectedTopicId = null; // ID of the selected topic
@@ -53,11 +54,29 @@
       );
 
     books = _books;
-    topics = _topics;
+    topic = { _id: -1, title: "", children: _topics };
+
+    updateNodes();
+
     livroSelecionado = _livroSelecionado;
 
     isLoading = false;
   });
+
+  const updateNodes = () => {
+    nodes = {};
+    const flatten = (node, indexPath) => {
+      node.id = node._id;
+      node.indexPath = indexPath;
+      node.children = node.children ? node.children : [];
+      nodes[node.id] = node;
+      if (node.children)
+        node.children.forEach((child, i) => flatten(child, [...indexPath, i]));
+    };
+    flatten(topic, []);
+
+    original = JSON.parse(JSON.stringify(topic));
+  };
 
   // Initialize toast parameters
   function initializeToast() {
@@ -89,7 +108,8 @@
     isLoading = false;
 
     if (result) {
-      topics = result; // Update topics list
+      topic = { id: -1, title: "", children: result }; // Update topic list
+      updateNodes();
       resetSelection();
       if (successMessage) showToast("success", successMessage);
     } else {
@@ -119,7 +139,10 @@
   };
 
   // Add a new topic
-  const handleAddTopic = (topicId, indexPath) =>
+  const handleAddTopic = (indexPath) => {
+    let topicId = topic.children[indexPath[0]]?._id;
+    indexPath = indexPath.slice(1);
+
     confirmSwal(
       "Tem certeza de que deseja adicionar um novo tópico?",
       "",
@@ -132,9 +155,13 @@
           "Tópico adicionado com sucesso!"
         )
     );
+  };
 
   // Delete a topic
-  const handleDeleteTopic = (topicId, indexPath) =>
+  const handleDeleteTopic = (indexPath) => {
+    let topicId = topic.children[indexPath[0]]?._id;
+    indexPath = indexPath.slice(1);
+
     confirmSwal(
       "Tem certeza de que deseja excluir este tópico?",
       "",
@@ -147,9 +174,13 @@
           "Tópico excluído com sucesso!"
         )
     );
+  };
 
   // Select a topic and load its details
-  const handleSelectTopic = async (topicId, indexPath) => {
+  const handleSelectTopic = async (indexPath) => {
+    let topicId = topic.children[indexPath[0]]?._id;
+    indexPath = indexPath.slice(1);
+
     isLoading = true;
     selectedIndexPath = indexPath;
     selectedTopicId = topicId;
@@ -268,6 +299,50 @@
 
   // Close toast notification
   const handleCloseToast = () => (toastParams.show = false);
+
+  const onFinalize = (sourcePath, destinationPath, destinationIndex) => {
+    confirmSwal(
+      "Tem certeza de que deseja alterar a ordem dos tópicos?",
+      "",
+      "warning",
+      async () => {
+        isLoading = true;
+
+        const [result, error] = await callBackendAPI(
+          fetch,
+          null,
+          `/topics/change_order`,
+          "POST",
+          {
+            sourcePath,
+            destinationPath,
+            bookId: livroSelecionado,
+            index: destinationIndex,
+          }
+        );
+
+        isLoading = false;
+
+        if (result) {
+          topic = { id: -1, title: "", children: result }; // Update topic list
+          updateNodes();
+          showToast("success", "Ordem dos tópicos alterada com sucesso!");
+        } else {
+          topic = original;
+          updateNodes();
+
+          showToast(
+            "danger",
+            error?.detail || "Erro ao alterar a ordem dos tópicos."
+          );
+        }
+      },
+      () => {
+        topic = original;
+        updateNodes();
+      }
+    );
+  };
 </script>
 
 {#if isLoading}
@@ -296,24 +371,20 @@
   <div class="col-md-4">
     <Card cardProps="mb-4" headerTitle="Estrutura do Livro" Headerprops="pb-2">
       <span slot="content">
-        <ListGroup CustomClass="nested-list">
-          {#each topics as topic, i}
-            <TopicItem
-              chapterIndex={i}
-              {topic}
-              {handleAddTopic}
-              {handleDeleteTopic}
-              topicId={topic["_id"]}
-              onSelect={handleSelectTopic}
-              selectedTopicId={selectedTopic ? selectedTopic._id : null}
-            />
-          {/each}
-        </ListGroup>
+        <TopicItem
+          node={topic}
+          bind:nodes
+          {onFinalize}
+          {handleAddTopic}
+          {handleDeleteTopic}
+          {handleSelectTopic}
+          selectedTopicId={selectedTopic?._id}
+        />
         <Button
           text="+ Adicionar tópico"
           color="link"
           onclickfunc={handleAddChapter}
-          disabled={!livroSelecionado}
+          disabled={!livroSelecionado || !!selectedTopicId}
         />
       </span>
     </Card>
@@ -358,6 +429,12 @@
             text="Salvar"
             color="outline-success"
             onclickfunc={handleTopicInfoSave}
+            disabled={!selectedTopic}
+          />
+          <Button
+            text="Cancelar"
+            color="outline-danger"
+            onclickfunc={() => resetSelection()}
             disabled={!selectedTopic}
           />
         </div>

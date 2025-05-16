@@ -9,7 +9,13 @@ import Swal from "sweetalert2";
  * @param {Function} callback - The function to execute if the user confirms.
  * @returns {Promise<boolean>} - Resolves to `false` if the user cancels, otherwise executes the callback.
  */
-export const confirmSwal = async (title, text, icon, callback) => {
+export const confirmSwal = async (
+  title,
+  text,
+  icon,
+  approve,
+  decline = () => {}
+) => {
   // Create a SweetAlert2 instance with custom button styles
   const swalWithBootstrapButtons = Swal.mixin({
     customClass: {
@@ -32,8 +38,9 @@ export const confirmSwal = async (title, text, icon, callback) => {
 
   // Handle the user's response
   if (result.isConfirmed) {
-    callback(); // Execute the callback if the user confirms
+    approve(); // Execute the callback if the user confirms
   } else if (result.dismiss === Swal.DismissReason.cancel) {
+    decline();
     return false; // Return false if the user cancels
   }
 };
