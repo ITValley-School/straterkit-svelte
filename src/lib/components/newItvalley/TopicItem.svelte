@@ -49,7 +49,10 @@
       class="list-group-item d-flex justify-content-between align-items-center {isSelected
         ? 'active'
         : ''}"
-      on:click={() => handleSelectTopic(node.indexPath)}
+      on:click={(e) => {
+        e.stopPropagation();
+        handleSelectTopic(node.indexPath);
+      }}
     >
       {#if node.indexPath.length > 1}
         {#if !selectedTopicId}
@@ -76,7 +79,10 @@
           color="outline-success"
           size="sm"
           customClass="me-1"
-          onclickfunc={() => handleAddTopic(node.indexPath)}
+          onclickfunc={(e) => {
+            e.stopPropagation();
+            handleAddTopic(node.indexPath);
+          }}
           disabled={!!selectedTopicId}
         />
         <!-- Button to delete the current topic -->
@@ -84,7 +90,10 @@
           text="🗑"
           color="outline-danger"
           size="sm"
-          onclickfunc={() => handleDeleteTopic(node.indexPath)}
+          onclickfunc={(e) => {
+            e.stopPropagation();
+            handleDeleteTopic(node.indexPath);
+          }}
           disabled={!!selectedTopicId}
         />
       </div>
