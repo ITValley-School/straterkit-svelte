@@ -52,7 +52,11 @@
       on:click={() => handleSelectTopic(node.indexPath)}
     >
       {#if node.indexPath.length > 1}
-        <div use:dragHandle class="bi bi-grip-vertical me-2 text-muted"></div>
+        {#if !selectedTopicId}
+          <div use:dragHandle class="bi bi-grip-vertical me-2 text-muted"></div>
+        {:else}
+          <div class="bi bi-grip-vertical me-2 text-muted"></div>
+        {/if}
       {/if}
 
       {node.indexPath.length == 1
