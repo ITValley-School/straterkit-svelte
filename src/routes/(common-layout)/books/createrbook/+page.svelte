@@ -3,11 +3,11 @@
   import Card from "$lib/@spk/SpkBasicCard.svelte"; // Custom card component
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte"; // Custom button component
   import { confirmSwal } from "$lib/components/confirmSwal.js"; // Utility for confirmation modals
-  import { callBackendAPI } from "$lib/utils/requestUtils.js"; // Utility for API calls
   import { Input, Label } from "@sveltestrap/sveltestrap"; // Sveltestrap components for form inputs
   import { userData } from "$lib/store/userStore.js"; // Store for user data
   import ToastContainer from "$lib/components/ToastContainer.svelte"; // Toast notification container
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte"; // Loading spinner component
+  import { createBook } from "$lib/services/bookService.js";
 
   // Initializing form data and state variables
   let formData = {
@@ -64,28 +64,8 @@
       "info",
       async () => {
         isLoading = true; // Show loading spinner
-        const formDataToSend = new FormData(); // Create FormData object
-        formDataToSend.append(
-          "info",
-          JSON.stringify({
-            Title: formData.titulo,
-            SubTitle: formData.subtitulo,
-            CategoryID: formData.categoria,
-            LanguageID: formData.idioma,
-            Audience: formData.publico,
-            Description: formData.descricao,
-            CoAuthors: formData.coautores,
-          })
-        );
-        formDataToSend.append("file", formData.capa); // Append cover image
 
-        const [result, error] = await callBackendAPI(
-          fetch,
-          null,
-          "/books",
-          "POST",
-          formDataToSend
-        );
+        const [result, error] = await createBook(formData);
 
         if (result) {
           handleClear(); // Clear form on success

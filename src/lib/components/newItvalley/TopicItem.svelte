@@ -51,7 +51,7 @@
         : ''}"
       on:click={(e) => {
         e.stopPropagation();
-        handleSelectTopic(node.indexPath);
+        handleSelectTopic(node.indexPath, node.id);
       }}
     >
       {#if node.indexPath.length > 1}
@@ -96,24 +96,22 @@
           }}
           disabled={!!selectedTopicId}
         />
-        {#if node.indexPath.length == 1}
-          <Button
-            text={node.collapsed ? "▲" : "▼"}
-            color="outline-primary"
-            size="sm"
-            onclickfunc={(e) => {
-              e.stopPropagation();
-              node.collapsed = !node.collapsed;
-            }}
-            disabled={!!selectedTopicId}
-          />
-        {/if}
+        <Button
+          text={node.collapsed ? "▼" : "▲"}
+          color="outline-primary"
+          size="sm"
+          onclickfunc={(e) => {
+            e.stopPropagation();
+            node.collapsed = !node.collapsed;
+          }}
+          disabled={!!selectedTopicId}
+        />
       </div>
     </li>
   {/if}
 
   {#if node?.children && (node.collapsed == undefined || !node.collapsed)}
-    {#if node.indexPath.length > 0}
+    {#if node?.indexPath?.length > 0}
       <section
         use:dragHandleZone={{
           items: node.children,

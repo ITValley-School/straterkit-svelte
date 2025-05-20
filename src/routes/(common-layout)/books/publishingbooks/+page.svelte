@@ -5,10 +5,14 @@
   import Card from "$lib/@spk/SpkBasicCard.svelte";
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
   import SpkBadge from "$lib/@spk/uielements/badge/SpkBadge.svelte";
-  import { callBackendAPI } from "$lib/utils/requestUtils.js";
   import { confirmSwal } from "$lib/components/confirmSwal.js";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
+  import {
+    changeStatus,
+    getBooks,
+    deleteBook,
+  } from "$lib/services/bookService.js";
 
   // Initialize books and other state variables
   let books = [];
@@ -27,7 +31,7 @@
   onMount(async () => {
     isLoading = true;
 
-    const [_books] = await callBackendAPI(fetch, null, "/books", "GET");
+    const [_books] = await getBooks();
 
     books = _books;
 
@@ -62,21 +66,11 @@
       async () => {
         isLoading = true; // Show loading spinner
 
-        const endpoint =
-          action === "changeStatus"
-            ? `/books/${bookId}/change_status`
-            : `/books/${bookId}`;
-        const method = action === "changeStatus" ? "POST" : "DELETE";
-        const body = action === "changeStatus" ? { status } : null;
+        let result, error;
 
-        // Call backend API to perform the action
-        const [result, error] = await callBackendAPI(
-          fetch,
-          null,
-          endpoint,
-          method,
-          body
-        );
+        if (action === "changeStatus")
+          [result, error] = await changeStatus(bookId, status);
+        else [result, error] = await deleteBook(bookId);
 
         // Show success or error toast based on the result
         if (result) {

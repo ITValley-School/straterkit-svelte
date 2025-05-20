@@ -11,10 +11,10 @@
     Input,
   } from "@sveltestrap/sveltestrap";
   import { confirmSwal } from "$lib/components/confirmSwal.js";
-  import { callBackendAPI } from "$lib/utils/requestUtils.js";
   import { userData } from "$lib/store/userStore.js";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
+  import { updateUserData } from "$lib/services/authService.js";
 
   // Environment variable for Azure Data Lake URL
   const DATALAKE_URL = import.meta.env.VITE_BASE_AZURE_DATALAKE_URL;
@@ -78,28 +78,7 @@
       async () => {
         isLoading = true;
 
-        // Preparing form data for API call
-        const formData = new FormData();
-        formData.append(
-          "info",
-          JSON.stringify({
-            firstName: user.firstName,
-            lastName: user.lastName,
-            password: user.password,
-            newPassword: user.newPassword,
-            confirmPassword: user.confirmPassword,
-          })
-        );
-        if (file) formData.append("file", file);
-
-        // Making API call to update user data
-        const [result, error] = await callBackendAPI(
-          fetch,
-          null,
-          "/authors",
-          "PUT",
-          formData
-        );
+        const [result, error] = await updateUserData(user, file);
 
         if (result) {
           handleClear(); // Clear form fields

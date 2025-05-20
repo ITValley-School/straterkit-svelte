@@ -4,10 +4,23 @@
   import Card from "$lib/@spk/SpkBasicCard.svelte";
   import Button from "$lib/@spk/uielements/Button/SpkButton.svelte";
   import TopicItem from "$lib/components/newItvalley/TopicItem.svelte";
-  import { callBackendAPI } from "$lib/utils/requestUtils.js";
   import { confirmSwal } from "$lib/components/confirmSwal.js";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
+  import {
+    addChapter,
+    getBooks,
+    getChaptersByBookId,
+  } from "$lib/services/bookService.js";
+  import {
+    addTopic,
+    changeOrder,
+    deleteTopic,
+    getSelectedTopic,
+    improveWithAI,
+    topicInfoSave,
+    uploadFile,
+  } from "$lib/services/topicService.js";
 
   // Destructuring data into variables
   let books = [],
@@ -18,6 +31,7 @@
   let selectedTopic = null; // Currently selected topic
   let selectedIndexPath = null; // Index path of the selected topic
   let selectedTopicId = null; // ID of the selected topic
+  let selectedSubTopicId = null;
 
   // Topic details
   let selectedTopicTitle = "";
@@ -35,7 +49,7 @@
     const params = new URLSearchParams(window.location.search);
     const bookId = params.get("book_id");
 
-    const [_books] = await callBackendAPI(fetch, null, "/books", "GET");
+    const [_books] = await getBooks();
 
     const _livroSelecionado = _books.length
       ? bookId
@@ -46,19 +60,13 @@
     let _topics = [];
 
     if (_books.length > 0)
-      [_topics] = await callBackendAPI(
-        fetch,
-        null,
-        `/chapters/get_all_by_book_id/${_livroSelecionado}`,
-        "GET"
-      );
+      [_topics] = await getChaptersByBookId(_livroSelecionado);
 
     books = _books;
     topic = { _id: -1, title: "", children: _topics };
+    livroSelecionado = _livroSelecionado;
 
     updateNodes();
-
-    livroSelecionado = _livroSelecionado;
 
     isLoading = false;
   });
@@ -70,6 +78,10 @@
       node.indexPath = indexPath;
       node.children = node.children ? node.children : [];
       nodes[node.id] = node;
+
+      if (indexPath.length == 1 && node.collapsed == undefined)
+        node.collapsed = true;
+
       if (node.children)
         node.children.forEach((child, i) => flatten(child, [...indexPath, i]));
     };
@@ -88,6 +100,7 @@
     selectedTopic = null;
     selectedIndexPath = null;
     selectedTopicId = null;
+    selectedSubTopicId = null;
     selectedTopicTitle = "";
     selectedTopicDescription = "";
     selectedTopicTranscription = "";
@@ -96,27 +109,12 @@
   }
 
   // Generic function to handle API actions
-  async function handleAction(url, method, body = null, successMessage = "") {
-    isLoading = true;
-    const [result, error] = await callBackendAPI(
-      fetch,
-      null,
-      url,
-      method,
-      body
-    );
+  async function handleAction(response, successMessage = "") {
+    const [result, error] = response;
     isLoading = false;
 
     if (result) {
-      topic = {
-        id: -1,
-        title: "",
-        children: result.map((item) => {
-          if (nodes?.[item._id]?.collapsed != undefined)
-            return { ...item, collapsed: nodes?.[item._id]?.collapsed };
-          return { ...item };
-        }),
-      }; // Update topic list
+      setTopicWithCollapsed(result);
       updateNodes();
       resetSelection();
       if (successMessage) showToast("success", successMessage);
@@ -131,19 +129,20 @@
       "Tem certeza de que deseja adicionar um novo capítulo?",
       "",
       "info",
-      () =>
-        handleAction(
-          "/chapters",
-          "POST",
-          { bookId: livroSelecionado },
-          "Capítulo adicionado com sucesso!"
-        )
+      async () => {
+        isLoading = true;
+        const response = await addChapter(livroSelecionado);
+        handleAction(response, "Capítulo adicionado com sucesso!");
+      }
     );
 
   // Load topics for a selected book
-  const carregarTopicos = (livroId) => {
+  const carregarTopicos = async (livroId) => {
     resetSelection();
-    handleAction(`/chapters/get_all_by_book_id/${livroId}`, "GET");
+
+    isLoading = true;
+    const response = await getChaptersByBookId(livroId);
+    handleAction(response);
   };
 
   // Add a new topic
@@ -155,13 +154,15 @@
       "Tem certeza de que deseja adicionar um novo tópico?",
       "",
       "info",
-      () =>
-        handleAction(
-          `/topics/${topicId}`,
-          "POST",
-          { indexPath, bookId: livroSelecionado },
-          "Tópico adicionado com sucesso!"
-        )
+      async () => {
+        isLoading = true;
+
+        const response = await addTopic(topicId, {
+          indexPath,
+          bookId: livroSelecionado,
+        });
+        handleAction(response, "Tópico adicionado com sucesso!");
+      }
     );
   };
 
@@ -174,42 +175,44 @@
       "Tem certeza de que deseja excluir este tópico?",
       "",
       "warning",
-      () =>
-        handleAction(
-          `/topics/${topicId}`,
-          "DELETE",
-          { indexPath, bookId: livroSelecionado },
-          "Tópico excluído com sucesso!"
-        )
+      async () => {
+        isLoading = true;
+
+        const response = await deleteTopic(topicId, {
+          indexPath,
+          bookId: livroSelecionado,
+        });
+        handleAction(response, "Tópico excluído com sucesso!");
+      }
     );
   };
 
   // Select a topic and load its details
-  const handleSelectTopic = async (indexPath) => {
-    let topicId = topic.children[indexPath[0]]?._id;
-    indexPath = indexPath.slice(1);
-
-    isLoading = true;
-    selectedIndexPath = indexPath;
-    selectedTopicId = topicId;
-
-    const params = new URLSearchParams({ indexPath });
-    const [result, error] = await callBackendAPI(
-      fetch,
-      null,
-      `/topics/${topicId}?${params.toString()}`,
-      "GET"
-    );
-
-    isLoading = false;
-
-    if (error) {
-      showToast("danger", error?.detail || "Erro ao carregar os tópicos.");
+  const handleSelectTopic = async (indexPath, nodeId) => {
+    if (selectedSubTopicId == nodeId) {
+      resetSelection();
     } else {
-      selectedTopic = result;
-      selectedTopicTitle = selectedTopic.title || "";
-      selectedTopicDescription = selectedTopic.description || "";
-      selectedTopicTranscription = selectedTopic.transcription || "";
+      let topicId = topic.children[indexPath[0]]?._id;
+      indexPath = indexPath.slice(1);
+
+      isLoading = true;
+      selectedIndexPath = indexPath;
+      selectedTopicId = topicId;
+      selectedSubTopicId = nodeId;
+
+      const params = new URLSearchParams({ indexPath });
+      const [result, error] = await getSelectedTopic(topicId, params);
+
+      isLoading = false;
+
+      if (error) {
+        showToast("danger", error?.detail || "Erro ao carregar os tópicos.");
+      } else {
+        selectedTopic = result;
+        selectedTopicTitle = selectedTopic.title || "";
+        selectedTopicDescription = selectedTopic.description || "";
+        selectedTopicTranscription = selectedTopic.transcription || "";
+      }
     }
   };
 
@@ -219,19 +222,19 @@
       "Tem certeza de que deseja salvar as informações deste tópico?",
       "",
       "warning",
-      () =>
-        handleAction(
-          `/topics/${selectedTopicId}`,
-          "PUT",
-          {
-            title: selectedTopicTitle,
-            description: selectedTopicDescription,
-            transcription: selectedTopicTranscription,
-            indexPath: selectedIndexPath,
-            bookId: livroSelecionado,
-          },
-          "Informações do tópico salvas com sucesso!"
-        )
+      async () => {
+        isLoading = true;
+
+        const response = await topicInfoSave(selectedTopicId, {
+          title: selectedTopicTitle,
+          description: selectedTopicDescription,
+          transcription: selectedTopicTranscription,
+          indexPath: selectedIndexPath,
+          bookId: livroSelecionado,
+        });
+
+        handleAction(response, "Informações do tópico salvas com sucesso!");
+      }
     );
 
   // Upload a file
@@ -243,19 +246,10 @@
       async () => {
         isLoading = true;
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append(
-          "info",
-          JSON.stringify({ indexPath: selectedIndexPath })
-        );
-
-        const [result, error] = await callBackendAPI(
-          fetch,
-          null,
-          `/topics/${selectedTopicId}/upload_file`,
-          "POST",
-          formData
+        const [result, error] = await uploadFile(
+          file,
+          selectedIndexPath,
+          selectedTopicId
         );
 
         isLoading = false;
@@ -278,12 +272,9 @@
       async () => {
         isLoading = true;
 
-        const [result, error] = await callBackendAPI(
-          fetch,
-          null,
-          `/topics/${selectedTopicId}/improve_with_ai`,
-          "POST",
-          { indexPath: selectedIndexPath }
+        const [result, error] = await improveWithAI(
+          selectedTopicId,
+          selectedIndexPath
         );
 
         isLoading = false;
@@ -316,27 +307,21 @@
       async () => {
         isLoading = true;
 
-        const [result, error] = await callBackendAPI(
-          fetch,
-          null,
-          `/topics/change_order`,
-          "POST",
-          {
-            sourcePath,
-            destinationPath,
-            bookId: livroSelecionado,
-            index: destinationIndex,
-          }
+        const [result, error] = await changeOrder(
+          sourcePath,
+          destinationPath,
+          livroSelecionado,
+          destinationIndex
         );
 
         isLoading = false;
 
         if (result) {
-          topic = { id: -1, title: "", children: result }; // Update topic list
+          setTopicWithCollapsed(result);
           updateNodes();
           showToast("success", "Ordem dos tópicos alterada com sucesso!");
         } else {
-          topic = original;
+          setTopicWithCollapsed(original);
           updateNodes();
 
           showToast(
@@ -350,6 +335,18 @@
         updateNodes();
       }
     );
+  };
+
+  const setTopicWithCollapsed = (data) => {
+    topic = {
+      id: -1,
+      title: "",
+      children: data.map((item) => {
+        if (nodes?.[item._id]?.collapsed != undefined)
+          return { ...item, collapsed: nodes?.[item._id]?.collapsed };
+        return { ...item };
+      }),
+    };
   };
 </script>
 
